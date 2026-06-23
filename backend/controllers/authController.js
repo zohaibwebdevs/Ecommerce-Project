@@ -67,5 +67,91 @@ exports.register = async (req, res) => {
 // @desc    POST /api/auth/login
 // @access  Public
 exports.login = async (req, res) => {
-  
-}
+  try {
+    const { email, password } = req.body;
+
+    // Check if user exists and include password field
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Check password
+    const isPasswordMatch = await user.comparePassword(password)
+
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    // Set cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Logout user
+// @route   POST /api/auth/logout
+// @access  Private
+
+exports.logout = async (req, res) => {
+  // clear cookie
+  res.cookie('token', '', {
+    httpOnly: true,
+    expires: new Date(0) // set expiration date to past date
+  });
+
+  res.json({
+    success: true,
+    message: 'Logged out successfully'
+  });
+};
+
+
+// @desc    Get current logged in user
+// @route   GET /api/auth/me
+// @access  Private
+
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    res.json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
