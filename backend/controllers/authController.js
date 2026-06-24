@@ -1,6 +1,5 @@
 // Handles authentication logic
 
-const user = require('../models/user');
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 
@@ -29,7 +28,7 @@ exports.register = async (req, res) => {
     }
 
     // Create new user
-    const user = await user.create({
+    const user = await User.create({
       name,
       email,
       password

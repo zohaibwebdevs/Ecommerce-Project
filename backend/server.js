@@ -6,15 +6,23 @@ require('dotenv').config();
 
 const app = express();
 
+// Import routes
+const authRoutes = require('./routes/authRoutes');
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true
 }));
 
+// use routes (before the test route)
+app.use('/api/auth', authRoutes);
+
+// Keep the test routes
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend is working!' });
+  res.json({ message: 'Backend is working' });
 });
 
 mongoose.connect(process.env.MONGODB_URI)
